@@ -1,0 +1,21 @@
+service:
+  port: "8082"
+  secret: "" # set through Env
+  default_admin:
+    username: "superuser"
+    password: "mypass"
+    email: "admin@mail.com"
+db:
+  host: "localhost"
+  port: "27017"
+  user: "user"
+  pass: "pass"
+  name: "dev_zone"
+openvpn:
+  easyrsa: "/etc/openvpn/server/easy-rsa/"
+  ca-cert: "/etc/openvpn/server/ca.crt"
+  tls-key: "/etc/openvpn/server/tc.key"
+  client-template: "/etc/openvpn/server/client-common.txt"
+yacloud:
+  folderid: "" # it is necessary to specify
+  token: "" # set through Env

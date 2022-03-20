@@ -1,0 +1,50 @@
+version: "3.8"
+services:
+  mongodb:
+    image: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - data:/data
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+  
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=user
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=pass
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+  
+  dev-zone-deployment:
+    image: kron1sant/dev-zone-deployment
+    depends_on:
+      - "mongodb"
+    restart: always
+    ports:
+      - 8082:8082
+    volumes:
+      - devzone:/etc/devZoneDeployment/
+      - openvpn:/etc/openvpn/server/
+    environment:
+      - DEVZONE_YA_TOKEN= # it is necessary to specify
+    
+  dev-zone-web:
+    image: kron1sant/dev-zone-web
+    restart: always
+    ports:
+      - 8080:8080
+
+  # ToDo add nginx for TLS implementation
+volumes:
+  data: {}    # database
+  devzone: {} # ToDo - set config devzone
+  openvpn: {} # ToDo - provide access to the openvpn server directory
+
+networks:
+  default:
+    name: mongodb_network
