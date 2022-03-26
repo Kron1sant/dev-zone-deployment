@@ -55,10 +55,12 @@ func (ds *MongoDBSource) RemoveAppUser(uid api.UserIdentity, appUser *dom.User) 
 	appUsers := ds.Database.Collection("app_users")
 	filter := new(mongoFilter)
 	filter.AddEq("_id", appUser.Id)
-	_, err := appUsers.DeleteOne(DefaulContext(), filter.Compose())
+	res, err := appUsers.DeleteOne(DefaulContext(), filter.Compose())
 	if err != nil {
 		log.Printf("Cannot remove %v, cause: %s\n", appUser, err)
 		return err
+	} else if res.DeletedCount == 0 {
+		return fmt.Errorf("the user has not been deleted, because 0 users have such id: %d", appUser.Id)
 	}
 
 	return nil
