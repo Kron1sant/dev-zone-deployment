@@ -12,6 +12,9 @@ import (
 )
 
 func main() {
+	// Initialize an app configuration by file and env vars
+	config.Init()
+
 	// Create DB connector and set global var
 	dataSource := mongodb.UseMongoDBSource()
 	defer dataSource.Close()
@@ -24,11 +27,9 @@ func main() {
 	authSite := restful.AddAuthMiddleware(router)
 	restful.AddHandlers(authSite)
 
-	port := config.GetAppPort()
-
 	switch gin.Mode() {
 	case "debug":
-		router.Run(":" + port)
+		router.Run(":" + config.GetAppPort())
 	case "release":
 		// ToDo
 	case "test":

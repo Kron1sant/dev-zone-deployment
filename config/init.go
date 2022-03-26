@@ -8,9 +8,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-func init() {
-	// Find and set config file
-	setConfigFile()
+func Init() {
+	// Finds a suitable config file and applies with it
+	InitWithFile(findConfigFile())
+}
+
+func InitWithFile(configFile string) {
+	viper.SetConfigFile(configFile)
 
 	// Read config from file
 	err := viper.ReadInConfig()
@@ -45,14 +49,13 @@ func init() {
 // 	}
 // }
 
-func setConfigFile() {
+func findConfigFile() string {
 	defaultConfig := "config.default.yaml" // expected in the app directory
 	configFileFromCLI := getConfigFileFromCLI()
-	if _, err := os.Stat(configFileFromCLI); err != nil {
-		viper.SetConfigFile(defaultConfig)
-	} else {
-		viper.SetConfigFile(configFileFromCLI)
+	if _, err := os.Stat(configFileFromCLI); err == nil {
+		return configFileFromCLI
 	}
+	return defaultConfig
 }
 
 func getConfigFileFromCLI() string {
