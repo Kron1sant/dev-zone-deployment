@@ -19,6 +19,7 @@ type UserIdentity struct {
 	Guest    bool
 }
 
+// Getting UserIdentity by User
 func IdentityFromUser(user *dom.User) UserIdentity {
 	identity := UserIdentity{
 		Id:       user.Id,
@@ -29,10 +30,12 @@ func IdentityFromUser(user *dom.User) UserIdentity {
 	return identity
 }
 
+// Getting UserIdentity from GIN context with JWT
 func IdentityFromContext(ctx *gin.Context) UserIdentity {
 	return IdentityFromJWTClaims(jwt.ExtractClaims(ctx))
 }
 
+// Getting UserIdentity from JWT claims
 func IdentityFromJWTClaims(claims jwt.MapClaims) UserIdentity {
 	// check id existence
 	idInClaims, ok := claims["id"]
@@ -68,6 +71,7 @@ func IdentityFromJWTClaims(claims jwt.MapClaims) UserIdentity {
 	return identity
 }
 
+// Preparing JWT claims with UserIdentity
 func UserIdentityToJWTClaims(identity UserIdentity) jwt.MapClaims {
 	return jwt.MapClaims{
 		"id":       fmt.Sprintf("%d", identity.Id),
