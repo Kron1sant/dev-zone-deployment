@@ -126,17 +126,13 @@ func (ds *MongoDBSource) getAppUsersFiltered(f db.Filter) []*dom.User {
 func (ds *MongoDBSource) checkAdmin() {
 	// Get default admin from config
 	// Default admin is needed to provide app authentication (e.g. RESTful api)
-	var defaultAdmin dom.User
-	confKey := "service.default_admin"
-	if supConf := config.AppConfig.Sub(confKey); supConf == nil {
-		log.Panicf("%q is absent in config. see config.example.yaml", confKey)
-	} else {
-		supConf.Unmarshal(&defaultAdmin)
+	adminFromConfig := config.GetDefaultAdmin()
+	defaultAdmin := dom.User{
+		Username: adminFromConfig.Username,
+		EMail:    adminFromConfig.Email,
+		Password: utils.HashAndSaltPassword(adminFromConfig.Password),
+		IsAdmin:  true,
 	}
-	// replace pass to its hash
-	defaultAdmin.Password = utils.HashAndSaltPassword(config.SecConfig.GetAdminPassword())
-	// new user is only admin
-	defaultAdmin.IsAdmin = true
 
 	// Check admin presence, otherwise add one
 	uid := api.IdentityFromUser(&defaultAdmin)

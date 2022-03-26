@@ -14,4 +14,4 @@ EXPOSE $DEVZONE_PORT
 VOLUME /etc/devZoneDeployment/
 VOLUME /etc/openvpn/server/
 
-CMD ["devZoneDeployment", "--config", "/etc/devZoneDeployment/"]
+CMD ["devZoneDeployment", "--config", "/etc/devZoneDeployment/config.yaml"]

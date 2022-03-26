@@ -91,7 +91,7 @@ func prepareJWTMiddleware() *jwt.GinJWTMiddleware {
 
 func getSecretKey() []byte {
 	// Get secret from os enviroments
-	secret := config.SecConfig.GetAppSecret()
+	secret := config.GetAppSecret()
 	if secret == "" {
 		// If secret is empty gen random secret
 		s := make([]byte, 20)

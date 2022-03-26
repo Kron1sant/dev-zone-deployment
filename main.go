@@ -24,7 +24,7 @@ func main() {
 	authSite := restful.AddAuthMiddleware(router)
 	restful.AddHandlers(authSite)
 
-	port := config.AppConfig.GetString("service.port")
+	port := config.GetAppPort()
 
 	switch gin.Mode() {
 	case "debug":
@@ -32,7 +32,7 @@ func main() {
 	case "release":
 		// ToDo
 	case "test":
-		log.Fatal("There is not any tests, yet:(")
+		// ToDo
 	default:
 		log.Fatalf("unknown gin mode %s", gin.Mode())
 	}
