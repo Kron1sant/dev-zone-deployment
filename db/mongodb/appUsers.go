@@ -1,14 +1,13 @@
 package mongodb
 
 import (
+	"devZoneDeployment/api"
 	"devZoneDeployment/config"
 	"devZoneDeployment/db"
 	"devZoneDeployment/db/dom"
 	"devZoneDeployment/db/utils"
 	"fmt"
 	"log"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func (ds *MongoDBSource) GetAppUsers(uid dom.UserIdentity, f db.Filter) []*dom.User {
@@ -140,18 +139,13 @@ func (ds *MongoDBSource) checkAdmin() {
 	defaultAdmin.IsAdmin = true
 
 	// Check admin presence, otherwise add one
-	appUser := ds.Database.Collection("app_users")
-	findCursor, err := appUser.Find(defaulContext(), bson.M{"username": defaultAdmin.Username})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if !findCursor.TryNext(defaulContext()) {
-		_, err := appUser.InsertOne(defaulContext(), defaultAdmin)
-		if err != nil {
+	uid := api.IdentityFromUser(&defaultAdmin)
+	if ds.GetAppUserByName(uid, defaultAdmin.Username) == nil {
+		if err := ds.SetAppUser(uid, &defaultAdmin, true); err != nil {
 			log.Fatalf("cannot create app admin in MongoDB: %s", err)
+		} else {
+			log.Printf("Add new app admin %q\n", defaultAdmin.Username)
 		}
-		log.Printf("Add new app admin %q\n", defaultAdmin.Username)
 	}
 }
 
