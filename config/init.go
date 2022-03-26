@@ -49,9 +49,9 @@ func setConfigFile() {
 	defaultConfig := "config.default.yaml" // expected in the app directory
 	configFileFromCLI := getConfigFileFromCLI()
 	if _, err := os.Stat(configFileFromCLI); err != nil {
-		viper.SetConfigFile(configFileFromCLI)
-	} else {
 		viper.SetConfigFile(defaultConfig)
+	} else {
+		viper.SetConfigFile(configFileFromCLI)
 	}
 }
 
