@@ -1,20 +1,25 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"encoding/json"
+	"log"
+
+	"github.com/spf13/viper"
+)
 
 type appConfig struct {
 	// Listening port
-	Port string
+	Port string `json:"port"`
 	// App secret. Used to encrypt authentication data
-	Secret string
+	Secret string `json:"secret"`
 	// App user creating by default
-	DefaultAdmin appUser
+	DefaultAdmin appUser `json:"default_admin"`
 }
 
 type appUser struct {
-	Username string
-	Password string
-	Email    string
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
 var appcfg appConfig
@@ -65,4 +70,10 @@ func GetAppSecret() string {
 
 func GetDefaultAdmin() appUser {
 	return appcfg.DefaultAdmin
+}
+
+func SetAppParamsFromJSON(params string) {
+	if err := json.Unmarshal([]byte(params), &appcfg); err != nil {
+		log.Fatalf("set app params from json failed: %s", err)
+	}
 }

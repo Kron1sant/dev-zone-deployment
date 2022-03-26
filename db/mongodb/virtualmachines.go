@@ -40,7 +40,7 @@ func (ds *MongoDBSource) UpdateListVirtualMachinesFromCloud(uid api.UserIdentity
 
 func (ds *MongoDBSource) getVirtualMachines(uid api.UserIdentity, f db.Filter) []*dom.VM {
 	virtMachines := ds.Database.Collection("virtual_machines")
-	findCursor, err := virtMachines.Find(defaulContext(), f.Compose())
+	findCursor, err := virtMachines.Find(DefaulContext(), f.Compose())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func (ds *MongoDBSource) getVirtualMachines(uid api.UserIdentity, f db.Filter) [
 		capacity = 10
 	}
 	res := make([]*dom.VM, 0, capacity)
-	for findCursor.Next(defaulContext()) {
+	for findCursor.Next(DefaulContext()) {
 		vm := &dom.VM{}
 		if err := findCursor.Decode(vm); err != nil {
 			log.Fatal(err)
@@ -68,7 +68,7 @@ func (ds *MongoDBSource) SetVirtualMachine(uid api.UserIdentity, vm *dom.VM, isN
 
 	virtMachines := ds.Database.Collection("virtual_machines")
 	if isNew {
-		res, err := virtMachines.InsertOne(defaulContext(), vm)
+		res, err := virtMachines.InsertOne(DefaulContext(), vm)
 		if err != nil {
 			log.Printf("Cannot insert %v, cause: %s\n", vm, err)
 			return err
@@ -76,7 +76,7 @@ func (ds *MongoDBSource) SetVirtualMachine(uid api.UserIdentity, vm *dom.VM, isN
 		log.Println("RESULT INSERTING:", *res)
 	} else {
 		filter := ds.GetFilter("_id", vm.Id)
-		_, err := virtMachines.ReplaceOne(defaulContext(), filter.Compose(), vm)
+		_, err := virtMachines.ReplaceOne(DefaulContext(), filter.Compose(), vm)
 		if err != nil {
 			log.Printf("Cannot update %v, cause: %s\n", vm, err)
 			return err

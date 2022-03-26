@@ -14,7 +14,7 @@ import (
 
 func (ds *MongoDBSource) GetDevAccounts(uid api.UserIdentity, f db.Filter) []*dom.DevAccount {
 	devAccs := ds.Database.Collection("dev_accounts")
-	findCursor, err := devAccs.Find(defaulContext(), f.Compose())
+	findCursor, err := devAccs.Find(DefaulContext(), f.Compose())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func (ds *MongoDBSource) GetDevAccounts(uid api.UserIdentity, f db.Filter) []*do
 		capacity = 10
 	}
 	res := make([]*dom.DevAccount, 0, capacity)
-	for findCursor.Next(defaulContext()) {
+	for findCursor.Next(DefaulContext()) {
 		devAccount := &dom.DevAccount{}
 		if err := findCursor.Decode(devAccount); err != nil {
 			log.Fatal(err)
@@ -43,7 +43,7 @@ func (ds *MongoDBSource) SetDevAccounts(uid api.UserIdentity, devAccount *dom.De
 	devAccs := ds.Database.Collection("dev_accounts")
 	if isNew {
 		devAccount.Id = ds.getNewId("dev_accounts")
-		res, err := devAccs.InsertOne(defaulContext(), devAccount)
+		res, err := devAccs.InsertOne(DefaulContext(), devAccount)
 		if err != nil {
 			log.Printf("Cannot insert %v, cause: %s\n", devAccount, err)
 			return err
@@ -52,7 +52,7 @@ func (ds *MongoDBSource) SetDevAccounts(uid api.UserIdentity, devAccount *dom.De
 	} else {
 		filter := new(mongoFilter)
 		filter.AddEq("_id", devAccount.Id)
-		_, err := devAccs.ReplaceOne(defaulContext(), filter.Compose(), devAccount)
+		_, err := devAccs.ReplaceOne(DefaulContext(), filter.Compose(), devAccount)
 		if err != nil {
 			log.Printf("Cannot update %v, cause: %s\n", devAccount, err)
 			return err
@@ -77,7 +77,7 @@ func (ds *MongoDBSource) RemoveDevAccounts(uid api.UserIdentity, devAccount *dom
 	devAccs := ds.Database.Collection("dev_accounts")
 	filter := new(mongoFilter)
 	filter.AddEq("_id", devAccount.Id)
-	_, err := devAccs.DeleteOne(defaulContext(), filter.Compose())
+	_, err := devAccs.DeleteOne(DefaulContext(), filter.Compose())
 	if err != nil {
 		log.Printf("Cannot remove %v, cause: %s\n", devAccount, err)
 		return err
@@ -96,7 +96,7 @@ func (ds *MongoDBSource) getNewId(collection string) uint {
 		ReturnDocument: &after,
 		Upsert:         &upsert,
 	}
-	res := counters.FindOneAndUpdate(defaulContext(), filter.Compose(), setStmt, &options)
+	res := counters.FindOneAndUpdate(DefaulContext(), filter.Compose(), setStmt, &options)
 
 	counterObj := struct {
 		Id  string `bson:"_id"`

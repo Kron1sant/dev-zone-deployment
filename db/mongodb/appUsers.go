@@ -28,7 +28,7 @@ func (ds *MongoDBSource) SetAppUser(uid api.UserIdentity, appUser *dom.User, isN
 	appUsers := ds.Database.Collection("app_users")
 	if isNew {
 		appUser.Id = ds.getNewId("app_users")
-		res, err := appUsers.InsertOne(defaulContext(), appUser)
+		res, err := appUsers.InsertOne(DefaulContext(), appUser)
 		if err != nil {
 			log.Printf("Cannot insert %v, cause: %s\n", appUser, err)
 			return err
@@ -37,7 +37,7 @@ func (ds *MongoDBSource) SetAppUser(uid api.UserIdentity, appUser *dom.User, isN
 	} else {
 		filter := new(mongoFilter)
 		filter.AddEq("_id", appUser.Id)
-		_, err := appUsers.ReplaceOne(defaulContext(), filter.Compose(), appUser)
+		_, err := appUsers.ReplaceOne(DefaulContext(), filter.Compose(), appUser)
 		if err != nil {
 			log.Printf("Cannot update %v, cause: %s\n", appUser, err)
 			return err
@@ -55,7 +55,7 @@ func (ds *MongoDBSource) RemoveAppUser(uid api.UserIdentity, appUser *dom.User) 
 	appUsers := ds.Database.Collection("app_users")
 	filter := new(mongoFilter)
 	filter.AddEq("_id", appUser.Id)
-	_, err := appUsers.DeleteOne(defaulContext(), filter.Compose())
+	_, err := appUsers.DeleteOne(DefaulContext(), filter.Compose())
 	if err != nil {
 		log.Printf("Cannot remove %v, cause: %s\n", appUser, err)
 		return err
@@ -95,14 +95,13 @@ func (ds *MongoDBSource) GetAppUserByName(uid api.UserIdentity, username string)
 	if len(users) == 1 {
 		return users[0]
 	} else {
-		log.Printf("User didn't find by name %s", username)
 		return nil
 	}
 }
 
 func (ds *MongoDBSource) getAppUsersFiltered(f db.Filter) []*dom.User {
 	appUsers := ds.Database.Collection("app_users")
-	findCursor, err := appUsers.Find(defaulContext(), f.Compose())
+	findCursor, err := appUsers.Find(DefaulContext(), f.Compose())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,7 +111,7 @@ func (ds *MongoDBSource) getAppUsersFiltered(f db.Filter) []*dom.User {
 		capacity = 1
 	}
 	res := make([]*dom.User, 0, capacity)
-	for findCursor.Next(defaulContext()) {
+	for findCursor.Next(DefaulContext()) {
 		appUser := &dom.User{}
 		if err := findCursor.Decode(appUser); err != nil {
 			log.Fatal(err)

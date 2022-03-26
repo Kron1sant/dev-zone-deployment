@@ -26,12 +26,12 @@ func newMongoDBSource() *MongoDBSource {
 	}
 
 	// Connect to MongoDB
-	if err := client.Connect(defaulContext()); err != nil {
+	if err := client.Connect(DefaulContext()); err != nil {
 		log.Fatalf("cannot connect to MongoDB: %s", err)
 	}
 
 	// Check connection
-	if err := client.Ping(defaulContext(), nil); err != nil {
+	if err := client.Ping(DefaulContext(), nil); err != nil {
 		log.Fatalf("mongoDB ping failed: %s", err)
 	}
 
@@ -48,7 +48,7 @@ func newMongoDBSource() *MongoDBSource {
 }
 
 // Return the context to operation with MongoDB
-func defaulContext() context.Context {
+func DefaulContext() context.Context {
 	d := time.Duration(timeout) * time.Second
 	ctx, close := context.WithTimeout(context.Background(), d)
 	// Check context will close after d seconds

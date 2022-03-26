@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/spf13/viper"
@@ -8,15 +9,15 @@ import (
 
 type dbConfig struct {
 	// DataBase host
-	Host string
+	Host string `json:"host"`
 	// DataBase port
-	Port string
+	Port string `json:"port"`
 	// DataBase user to connect
-	User string
+	User string `json:"user"`
 	// DataBase user's password
-	Pass string
+	Pass string `json:"pass"`
 	// DataBase name - where the application data is stored
-	BaseName string
+	BaseName string `json:"basename"`
 }
 
 var dbcfg dbConfig
@@ -62,4 +63,10 @@ func GetDBPass() string {
 
 func GetDBName() string {
 	return dbcfg.BaseName
+}
+
+func SetDBParamsFromJSON(params string) {
+	if err := json.Unmarshal([]byte(params), &dbcfg); err != nil {
+		log.Fatalf("set db params from json failed: %s", err)
+	}
 }
