@@ -10,7 +10,7 @@ import (
 	"log"
 )
 
-func (ds *MongoDBSource) GetAppUsers(uid dom.UserIdentity, f db.Filter) []*dom.User {
+func (ds *MongoDBSource) GetAppUsers(uid api.UserIdentity, f db.Filter) []*dom.User {
 	// Add a filter which control access
 	// Non admin user can see only own record
 	if !uid.IsAdmin {
@@ -20,7 +20,7 @@ func (ds *MongoDBSource) GetAppUsers(uid dom.UserIdentity, f db.Filter) []*dom.U
 	return ds.getAppUsersFiltered(f)
 }
 
-func (ds *MongoDBSource) SetAppUser(uid dom.UserIdentity, appUser *dom.User, isNew bool) error {
+func (ds *MongoDBSource) SetAppUser(uid api.UserIdentity, appUser *dom.User, isNew bool) error {
 	if err := ds.isAppUserEditingAvailable(uid, appUser, isNew); err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (ds *MongoDBSource) SetAppUser(uid dom.UserIdentity, appUser *dom.User, isN
 	return nil
 }
 
-func (ds *MongoDBSource) RemoveAppUser(uid dom.UserIdentity, appUser *dom.User) error {
+func (ds *MongoDBSource) RemoveAppUser(uid api.UserIdentity, appUser *dom.User) error {
 	if !uid.IsAdmin && uid.Id != appUser.Id {
 		return fmt.Errorf("only admin can delete another user")
 	}
@@ -64,7 +64,7 @@ func (ds *MongoDBSource) RemoveAppUser(uid dom.UserIdentity, appUser *dom.User) 
 	return nil
 }
 
-func (ds *MongoDBSource) SetAppUserPassword(uid dom.UserIdentity, userId uint, password string) error {
+func (ds *MongoDBSource) SetAppUserPassword(uid api.UserIdentity, userId uint, password string) error {
 	if !uid.IsAdmin && uid.Id != userId {
 		return fmt.Errorf("only admin can change another user passwords")
 	}
@@ -78,7 +78,7 @@ func (ds *MongoDBSource) SetAppUserPassword(uid dom.UserIdentity, userId uint, p
 	return ds.SetAppUser(uid, user, false)
 }
 
-func (ds *MongoDBSource) GetAppUserById(uid dom.UserIdentity, userId uint) *dom.User {
+func (ds *MongoDBSource) GetAppUserById(uid api.UserIdentity, userId uint) *dom.User {
 	filter := ds.GetFilter("_id", userId)
 	users := ds.getAppUsersFiltered(filter)
 	if len(users) == 1 {
@@ -89,7 +89,7 @@ func (ds *MongoDBSource) GetAppUserById(uid dom.UserIdentity, userId uint) *dom.
 	}
 }
 
-func (ds *MongoDBSource) GetAppUserByName(uid dom.UserIdentity, username string) *dom.User {
+func (ds *MongoDBSource) GetAppUserByName(uid api.UserIdentity, username string) *dom.User {
 	filter := ds.GetFilter("username", username)
 	users := ds.getAppUsersFiltered(filter)
 	if len(users) == 1 {
@@ -145,7 +145,7 @@ func (ds *MongoDBSource) checkAdmin() {
 	}
 }
 
-func (ds *MongoDBSource) isAppUserEditingAvailable(uid dom.UserIdentity, appUser *dom.User, isNew bool) error {
+func (ds *MongoDBSource) isAppUserEditingAvailable(uid api.UserIdentity, appUser *dom.User, isNew bool) error {
 	isAdminSession := uid.IsAdmin
 	userIdOfSession := uid.Id
 	var existingUser *dom.User = nil

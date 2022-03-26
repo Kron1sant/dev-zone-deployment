@@ -1,8 +1,8 @@
 package sessions
 
 import (
+	"devZoneDeployment/api"
 	"devZoneDeployment/db"
-	"devZoneDeployment/db/dom"
 	"devZoneDeployment/db/mongodb"
 	"testing"
 
@@ -13,9 +13,9 @@ func Test_contextSession_UpdateListVirtualMachinesFromCloud(t *testing.T) {
 	type fields struct {
 		ctx *gin.Context
 		ds  db.DataActions
-		ui  dom.UserIdentity
+		ui  api.UserIdentity
 	}
-	testAdmin := dom.UserIdentity{
+	testAdmin := api.UserIdentity{
 		Id:       9999,
 		IsAdmin:  true,
 		Username: "TestAdmin9999",

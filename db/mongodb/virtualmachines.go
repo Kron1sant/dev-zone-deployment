@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"devZoneDeployment/api"
 	"devZoneDeployment/db"
 	"devZoneDeployment/db/dom"
 	"devZoneDeployment/yacloudclient"
@@ -8,12 +9,12 @@ import (
 	"log"
 )
 
-func (ds *MongoDBSource) ListVirtualMachines(uid dom.UserIdentity) []*dom.VM {
+func (ds *MongoDBSource) ListVirtualMachines(uid api.UserIdentity) []*dom.VM {
 
 	return ds.getVirtualMachines(uid, ds.GetEmptyFilter())
 }
 
-func (ds *MongoDBSource) UpdateListVirtualMachinesFromCloud(uid dom.UserIdentity) error {
+func (ds *MongoDBSource) UpdateListVirtualMachinesFromCloud(uid api.UserIdentity) error {
 	vms := yacloudclient.ListInstances()
 	for _, v := range vms {
 		foundVm := ds.getVirtualMachines(uid, ds.GetFilter("_id", v.Id))
@@ -37,7 +38,7 @@ func (ds *MongoDBSource) UpdateListVirtualMachinesFromCloud(uid dom.UserIdentity
 	return nil
 }
 
-func (ds *MongoDBSource) getVirtualMachines(uid dom.UserIdentity, f db.Filter) []*dom.VM {
+func (ds *MongoDBSource) getVirtualMachines(uid api.UserIdentity, f db.Filter) []*dom.VM {
 	virtMachines := ds.Database.Collection("virtual_machines")
 	findCursor, err := virtMachines.Find(defaulContext(), f.Compose())
 	if err != nil {
@@ -60,7 +61,7 @@ func (ds *MongoDBSource) getVirtualMachines(uid dom.UserIdentity, f db.Filter) [
 	return res
 }
 
-func (ds *MongoDBSource) SetVirtualMachine(uid dom.UserIdentity, vm *dom.VM, isNew bool) error {
+func (ds *MongoDBSource) SetVirtualMachine(uid api.UserIdentity, vm *dom.VM, isNew bool) error {
 	if !uid.IsAdmin {
 		return fmt.Errorf("only admin can change virtual machine")
 	}

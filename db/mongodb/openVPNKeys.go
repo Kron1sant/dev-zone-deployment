@@ -1,13 +1,14 @@
 package mongodb
 
 import (
+	"devZoneDeployment/api"
 	"devZoneDeployment/db/dom"
 	"devZoneDeployment/devworkspace"
 	"fmt"
 	"strings"
 )
 
-func (ds *MongoDBSource) GetNewOrExistsOpenVPNKey(uid dom.UserIdentity, acc *dom.DevAccount) ([]byte, error) {
+func (ds *MongoDBSource) GetNewOrExistsOpenVPNKey(uid api.UserIdentity, acc *dom.DevAccount) ([]byte, error) {
 	if !uid.IsAdmin && uid.Id != acc.Id {
 		return nil, fmt.Errorf("you haven't got access to this dev account")
 	}

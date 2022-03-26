@@ -1,15 +1,5 @@
 package dom
 
-// Represent an identity of an app user session
-// Using to authorize actions in a session
-type UserIdentity struct {
-	Id       uint
-	Username string
-	IsAdmin  bool
-	Empty    bool
-	Guest    bool
-}
-
 // Represent an authenticated service user
 type User struct {
 	Id            uint   `bson:"_id" yaml:"id" json:"id"`

@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"devZoneDeployment/api"
 	"devZoneDeployment/db"
 	"devZoneDeployment/db/dom"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (ds *MongoDBSource) GetDevAccounts(uid dom.UserIdentity, f db.Filter) []*dom.DevAccount {
+func (ds *MongoDBSource) GetDevAccounts(uid api.UserIdentity, f db.Filter) []*dom.DevAccount {
 	devAccs := ds.Database.Collection("dev_accounts")
 	findCursor, err := devAccs.Find(defaulContext(), f.Compose())
 	if err != nil {
@@ -34,7 +35,7 @@ func (ds *MongoDBSource) GetDevAccounts(uid dom.UserIdentity, f db.Filter) []*do
 	return res
 }
 
-func (ds *MongoDBSource) SetDevAccounts(uid dom.UserIdentity, devAccount *dom.DevAccount, isNew bool) error {
+func (ds *MongoDBSource) SetDevAccounts(uid api.UserIdentity, devAccount *dom.DevAccount, isNew bool) error {
 	if !uid.IsAdmin {
 		return fmt.Errorf("only admin can change developer accounts")
 	}
@@ -61,7 +62,7 @@ func (ds *MongoDBSource) SetDevAccounts(uid dom.UserIdentity, devAccount *dom.De
 	return nil
 }
 
-func (ds *MongoDBSource) RemoveDevAccounts(uid dom.UserIdentity, devAccount *dom.DevAccount) error {
+func (ds *MongoDBSource) RemoveDevAccounts(uid api.UserIdentity, devAccount *dom.DevAccount) error {
 	if !uid.IsAdmin {
 		return fmt.Errorf("only admin can delete developer accounts")
 	}
@@ -109,7 +110,7 @@ func (ds *MongoDBSource) getNewId(collection string) uint {
 }
 
 // ToDo all Fields dosn't work due there aren't all fields on front
-func (ds *MongoDBSource) devAccountExists(uid dom.UserIdentity, devAccount *dom.DevAccount, checkAllFields bool) bool {
+func (ds *MongoDBSource) devAccountExists(uid api.UserIdentity, devAccount *dom.DevAccount, checkAllFields bool) bool {
 	filter := ds.GetFilter("_id", devAccount.Id)
 	accounts := ds.GetDevAccounts(uid, filter)
 	if len(accounts) != 1 {
