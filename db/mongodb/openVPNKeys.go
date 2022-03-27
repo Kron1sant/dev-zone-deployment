@@ -17,14 +17,7 @@ func (ds *MongoDBSource) GetNewOrExistsOpenVPNKey(uid api.UserIdentity, acc *dom
 		return nil, fmt.Errorf("the account doesn't exist")
 	}
 
-	if !acc.HasOVPNCert {
-		// We got a new ovpn key, save this information in DB
-		acc.HasOVPNCert = true
-		ds.SetDevAccounts(uid, acc, false)
-	}
-
 	keyName := acc.OpenVPNKeyName
-
 	if keyName == "" {
 		keyName = fmt.Sprintf("%d-%s", acc.Id, strings.ToLower(strings.TrimSpace(acc.Username)))
 	}
@@ -32,6 +25,7 @@ func (ds *MongoDBSource) GetNewOrExistsOpenVPNKey(uid api.UserIdentity, acc *dom
 	res, err := devworkspace.GetOpenVPNKey(keyName)
 	if err == nil && keyName != acc.OpenVPNKeyName {
 		// if it is the first openVPN key, then save it name after succesful generation
+		acc.HasOVPNCert = true
 		acc.OpenVPNKeyName = keyName
 		ds.SetDevAccounts(uid, acc, false)
 	}
