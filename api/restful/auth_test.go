@@ -2,64 +2,15 @@ package restful
 
 import (
 	"bytes"
-	"devZoneDeployment/config"
-	"devZoneDeployment/db/mongodb"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
-
-const (
-	TEST_DB_NAME  = "test_dev_zone"
-	TEST_APP_USER = "test_admin"
-	TEST_APP_PASS = "test_pass_123"
-)
-
-func TestMain(m *testing.M) {
-	setup()         // before testing
-	code := m.Run() // starts testing
-	teardown()      // after testing
-	os.Exit(code)
-}
-
-func setup() {
-	dbparams := `{"host":"localhost",
-		"port":"27017",
-		"user":"user",
-		"pass":"pass",
-		"basename":"` + TEST_DB_NAME + `"
-	}`
-	appparams := `{"port":"8089",
-		"secret":"test_secret_key",
-		"default_admin": {
-			"username":"` + TEST_APP_USER + `",
-			"password":"` + TEST_APP_PASS + `"
-		}
-	}`
-	config.SetDBParamsFromJSON(dbparams)
-	config.SetAppParamsFromJSON(appparams)
-
-	// During initialization, a new test base will be created
-	// and the specified user will be started
-	mongodb.UseMongoDBSource()
-}
-
-func teardown() {
-	// Delete test database
-	if mongodb.DS.Database.Name() == TEST_DB_NAME {
-		mongodb.DS.Database.Drop(mongodb.DefaulContext())
-	} else {
-		log.Fatalf("the name of the database differs from the expected value: %s != %s",
-			mongodb.DS.Database.Name(), TEST_DB_NAME)
-	}
-}
 
 func TestAddAuthMiddleware(t *testing.T) {
 	mockRouter := gin.New()
@@ -80,7 +31,7 @@ func TestAddAuthMiddleware(t *testing.T) {
 // Test case "Successful login"
 func successLoginTest(t *testing.T, mockRouter *gin.Engine) {
 	assert := assert.New(t)
-	rr, err := tryLoginToApp(mockRouter, TEST_APP_USER, TEST_APP_PASS)
+	rr, err := tryLoginToApp(mockRouter, TEST_APP_ADMIN_NAME, TEST_APP_ADMIN_PASS)
 	assert.NoError(err, "test failed: %s", err)
 	assert.Equal(http.StatusOK, rr.Code, "The response code must be 200")
 	assert.NotEmpty(rr.Header().Get("Set-Cookie"), "Cookie must be set")
@@ -90,7 +41,7 @@ func successLoginTest(t *testing.T, mockRouter *gin.Engine) {
 func failedLoginTest(t *testing.T, mockRouter *gin.Engine) {
 	assert := assert.New(t)
 	wrongPass := "wrong pass"
-	rr, err := tryLoginToApp(mockRouter, TEST_APP_USER, wrongPass)
+	rr, err := tryLoginToApp(mockRouter, TEST_APP_ADMIN_NAME, wrongPass)
 	assert.NoError(err, "test failed: %s", err)
 	assert.Equal(http.StatusUnauthorized, rr.Code, "The response code must be 401")
 }
@@ -98,7 +49,7 @@ func failedLoginTest(t *testing.T, mockRouter *gin.Engine) {
 // Test case "Logout"
 func logoutTest(t *testing.T, mockRouter *gin.Engine) {
 	assert := assert.New(t)
-	res, err := tryLoginToApp(mockRouter, TEST_APP_USER, TEST_APP_PASS)
+	res, err := tryLoginToApp(mockRouter, TEST_APP_ADMIN_NAME, TEST_APP_ADMIN_PASS)
 	if err != nil || res.Code != http.StatusOK {
 		// Failed login. Do nothing, because there is another according test
 		return
@@ -116,7 +67,7 @@ func logoutTest(t *testing.T, mockRouter *gin.Engine) {
 // Test case "Successful refresh token"
 func successRefreshTokenTest(t *testing.T, mockRouter *gin.Engine) {
 	assert := assert.New(t)
-	res, err := tryLoginToApp(mockRouter, TEST_APP_USER, TEST_APP_PASS)
+	res, err := tryLoginToApp(mockRouter, TEST_APP_ADMIN_NAME, TEST_APP_ADMIN_PASS)
 	if err != nil || res.Code != http.StatusOK {
 		// Failed login. Do nothing, because there is another according test
 		return
@@ -144,7 +95,7 @@ func failedRefreshTokenTest(t *testing.T, mockRouter *gin.Engine) {
 // Test case "Successful checking authentication"
 func successAuthCheckTest(t *testing.T, mockRouter *gin.Engine) {
 	assert := assert.New(t)
-	res, err := tryLoginToApp(mockRouter, TEST_APP_USER, TEST_APP_PASS)
+	res, err := tryLoginToApp(mockRouter, TEST_APP_ADMIN_NAME, TEST_APP_ADMIN_PASS)
 	if err != nil || res.Code != http.StatusOK {
 		// Failed login. Do nothing, because there is another according test
 		return
@@ -162,7 +113,7 @@ func successAuthCheckTest(t *testing.T, mockRouter *gin.Engine) {
 	assert.NoError(json.Unmarshal(rr.Body.Bytes(), &payload), "Failed unmarshalling payload from jwt")
 	assert.Equal(http.StatusOK, rr.Code, "The response code must be 200")
 	assert.True(payload.IsAdmin, "The response must content isAdmin flag")
-	assert.Equal(TEST_APP_USER, payload.Username, "The response code must content username")
+	assert.Equal(TEST_APP_ADMIN_NAME, payload.Username, "The response code must content username")
 }
 
 // Test case "Failed checking authentication"
@@ -190,11 +141,4 @@ func tryLoginToApp(mockRouter *gin.Engine, user string, pass string) (*httptest.
 	req.Header.Add("Content-Type", "application/json")
 
 	return request(mockRouter, req), nil
-}
-
-// request sends req to the mockRouter and returns Response
-func request(mockRouter *gin.Engine, req *http.Request) *httptest.ResponseRecorder {
-	rr := httptest.NewRecorder()
-	mockRouter.ServeHTTP(rr, req)
-	return rr
 }
