@@ -2,11 +2,20 @@ package restful
 
 import (
 	"bytes"
+	"devZoneDeployment/config"
 	"devZoneDeployment/db/dom"
 	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path"
 	"testing"
+
+	"github.com/alcortesm/tgz"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -209,4 +218,116 @@ func proccessAccAction(action string, acc dom.DevAccount) *httptest.ResponseReco
 	ctx.Request = httptest.NewRequest("POST", "/accounts/"+action, bytes.NewReader(b))
 	PostDevAccountAction()(ctx)
 	return w
+}
+
+func TestPostOpenVPNKey(t *testing.T) {
+	assert := assert.New(t)
+
+	// Deploy a temporary environment for easy-rsa
+	workspace, err := deployTestEasyRSAWorkspace()
+	if workspace != "" {
+		defer os.RemoveAll(workspace)
+	}
+	if err != nil {
+		assert.FailNow("Failed to deploy easy-rsa", err)
+	}
+
+	// Add the test dev account that will getting the openvpn key
+	rr := proccessAccAction("add", TEST_DEV_ACCOUNT)
+	// Read response a body
+	createdAcc := dom.DevAccount{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &createdAcc); err != nil {
+		assert.FailNow("The response body must contain the data of the created account", err)
+	}
+
+	// Test getting dev accounts
+	rr = httptest.NewRecorder()
+	ctx := prepareGinContext(rr)
+	b, _ := json.Marshal(createdAcc)
+	ctx.Request = httptest.NewRequest("POST", "/openvpnkey", bytes.NewReader(b))
+	PostOpenVPNKey()(ctx)
+	// Read response a body
+	ovpnKey := []byte{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &ovpnKey); err != nil {
+		assert.FailNow("The response body must contain the OpenVPN key", err)
+	}
+	// Check the code and some fields of the data
+	assert.Equal(http.StatusOK, rr.Code, "The response code must be 200")
+	assert.Equal(bytes.Index(ovpnKey, []byte("client")), 0, "OpenVPN key must be started with 'client'")
+}
+
+func deployTestEasyRSAWorkspace() (string, error) {
+	distr := "https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz"
+	distrpath, err := ioutil.TempFile("", "EasyRSA.tgz")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(distrpath.Name()) // clean up
+	if err := downloadEasyRSA(distr, distrpath.Name()); err != nil {
+		return "", err
+	}
+	tmpPath, err := tgz.Extract(distrpath.Name())
+	if err != nil {
+		return "", err
+	}
+
+	// Initialize workspace
+	ws := path.Join(tmpPath, "EasyRSA-3.0.8")
+	ca := path.Join(ws, "pki", "ca.crt")
+	tls := path.Join(ws, "tls.key")
+	template := path.Join(ws, "client-common.txt")
+	cmd(ws, "./easyrsa", "init-pki")
+	cmd(ws, "./easyrsa", "--batch", "build-ca", "nopass")
+	cmd(ws, "./easyrsa", "build-server-full", "server", "nopass")
+	cmd(ws, "./easyrsa", "gen-crl")
+
+	f_tls, err := os.Create(tls)
+	if err != nil {
+		return "", err
+	}
+	// Mocking data
+	fmt.Fprintf(f_tls, "-----BEGIN OpenVPN Static key V1-----\n")
+	fmt.Fprintf(f_tls, "FooooBazzzz\n")
+	fmt.Fprintf(f_tls, "-----END OpenVPN Static key V1-----\n")
+
+	f_tmplt, err := os.Create(template)
+	if err != nil {
+		return "", err
+	}
+	fmt.Fprintf(f_tmplt, "client\n")
+
+	// Set config
+	ovpnParams := fmt.Sprintf(`{
+		"easyrsa": "%s",
+		"ca-cert": "%s",
+		"tls-key": "%s",
+		"client-template": "%s"
+	}`, ws, ca, tls, template)
+	config.SetOpenVPNParamsFromJSON(ovpnParams)
+
+	return ws, nil
+}
+
+func downloadEasyRSA(url, distrpath string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	out, err := os.Create(distrpath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	io.Copy(out, resp.Body)
+	return nil
+}
+
+func cmd(ws string, command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+	cmd.Dir = ws
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
 }

@@ -15,6 +15,7 @@ require (
 )
 
 require (
+	github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7
 	github.com/go-playground/validator/v10 v10.10.1 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.0 // indirect
