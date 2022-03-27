@@ -31,7 +31,7 @@ func (ds *MongoDBSource) UpdateListVirtualMachinesFromCloud(uid api.UserIdentity
 		vm.Name = v.Name
 		vm.Description = v.Description
 		vm.Params = "params_foobaz"
-		vm.Status = yacloudclient.InstanseStatus(v.Status)
+		vm.Status = dom.StatusVM(yacloudclient.InstanseStatus(v.Status))
 		ds.SetVirtualMachine(uid, vm, isNew)
 	}
 
