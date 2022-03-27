@@ -1,12 +1,17 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"encoding/json"
+	"log"
+
+	"github.com/spf13/viper"
+)
 
 type yacloudConfig struct {
 	// Inner id of the folder of the cloud
-	Folderid string
+	Folderid string `json:"folderId"`
 	// Yandex cloud token
-	Token string
+	Token string `json:"token"`
 }
 
 var yacfg yacloudConfig
@@ -31,4 +36,10 @@ func GetYaFolderID() string {
 
 func GetYaToken() string {
 	return yacfg.Token
+}
+
+func SetYaCloudParamsFromJSON(params string) {
+	if err := json.Unmarshal([]byte(params), &yacfg); err != nil {
+		log.Fatalf("set db params from json failed: %s", err)
+	}
 }
