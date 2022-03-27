@@ -52,10 +52,12 @@ func (ds *MongoDBSource) SetDevAccounts(uid api.UserIdentity, devAccount *dom.De
 	} else {
 		filter := new(mongoFilter)
 		filter.AddEq("_id", devAccount.Id)
-		_, err := devAccs.ReplaceOne(DefaulContext(), filter.Compose(), devAccount)
+		res, err := devAccs.ReplaceOne(DefaulContext(), filter.Compose(), devAccount)
 		if err != nil {
 			log.Printf("Cannot update %v, cause: %s\n", devAccount, err)
 			return err
+		} else if res.ModifiedCount == 0 {
+			return fmt.Errorf("the account has not been modified, because 0 accs have such id: %d", devAccount.Id)
 		}
 	}
 
@@ -77,10 +79,12 @@ func (ds *MongoDBSource) RemoveDevAccounts(uid api.UserIdentity, devAccount *dom
 	devAccs := ds.Database.Collection("dev_accounts")
 	filter := new(mongoFilter)
 	filter.AddEq("_id", devAccount.Id)
-	_, err := devAccs.DeleteOne(DefaulContext(), filter.Compose())
+	res, err := devAccs.DeleteOne(DefaulContext(), filter.Compose())
 	if err != nil {
 		log.Printf("Cannot remove %v, cause: %s\n", devAccount, err)
 		return err
+	} else if res.DeletedCount == 0 {
+		return fmt.Errorf("the account has not been deleted, because 0 accs have such id: %d", devAccount.Id)
 	}
 
 	return nil

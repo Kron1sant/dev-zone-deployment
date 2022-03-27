@@ -37,10 +37,12 @@ func (ds *MongoDBSource) SetAppUser(uid api.UserIdentity, appUser *dom.User, isN
 	} else {
 		filter := new(mongoFilter)
 		filter.AddEq("_id", appUser.Id)
-		_, err := appUsers.ReplaceOne(DefaulContext(), filter.Compose(), appUser)
+		res, err := appUsers.ReplaceOne(DefaulContext(), filter.Compose(), appUser)
 		if err != nil {
 			log.Printf("Cannot update %v, cause: %s\n", appUser, err)
 			return err
+		} else if res.ModifiedCount == 0 {
+			return fmt.Errorf("the account has not been modified, because 0 accs have such id: %d", appUser.Id)
 		}
 	}
 
