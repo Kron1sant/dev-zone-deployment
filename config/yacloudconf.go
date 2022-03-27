@@ -18,8 +18,8 @@ var yacfg yacloudConfig
 
 func yacloudConfInit() {
 	token := ""
-	if viper.IsSet("DB_PASSWORD") {
-		token = viper.GetString("DB_PASSWORD")
+	if viper.IsSet("YA_TOKEN") {
+		token = viper.GetString("YA_TOKEN")
 	} else {
 		token = viper.GetString("yacloud.token")
 	}
