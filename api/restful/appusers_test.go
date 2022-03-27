@@ -2,7 +2,6 @@ package restful
 
 import (
 	"bytes"
-	"devZoneDeployment/api"
 	"devZoneDeployment/db/dom"
 	"encoding/json"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,17 +30,17 @@ func TestGetAppUsers(t *testing.T) {
 		EMail:    "foo@mail.foo",
 		IsAdmin:  true,
 	}
-	proccessAction("add", testUser1)
+	proccessUserAction("add", testUser1)
 	testUser2 := dom.User{
 		Username: "second_user",
 		EMail:    "baz@mail.baz",
 		IsAdmin:  true,
 	}
-	proccessAction("add", testUser2)
+	proccessUserAction("add", testUser2)
 
 	// Test getting app users
 	rr := httptest.NewRecorder()
-	ctx := prepareContext(rr)
+	ctx := prepareGinContext(rr)
 	GetAppUsers()(ctx)
 	// Read response a body
 	list := []dom.User{}
@@ -87,7 +85,7 @@ func stepAddFailedUser(assert *assert.Assertions) {
 		Username: "worng name",
 		EMail:    "123@321",
 	}
-	rr := proccessAction("add", wrongUser)
+	rr := proccessUserAction("add", wrongUser)
 	// Read response a body
 	errorResponce := struct{ Error string }{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &errorResponce); err != nil {
@@ -99,7 +97,7 @@ func stepAddFailedUser(assert *assert.Assertions) {
 }
 
 func stepAddCorrectUser(assert *assert.Assertions) dom.User {
-	rr := proccessAction("add", TEST_APP_USER)
+	rr := proccessUserAction("add", TEST_APP_USER)
 	// Read response a body
 	createdUser := dom.User{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &createdUser); err != nil {
@@ -119,7 +117,7 @@ func stepAddCorrectUser(assert *assert.Assertions) dom.User {
 func stepEditFailedUser(assert *assert.Assertions, testUser dom.User) {
 	wrongUser := testUser
 	wrongUser.Id = 999999
-	rr := proccessAction("edit", wrongUser)
+	rr := proccessUserAction("edit", wrongUser)
 	// Read response a body
 	errorResponce := struct{ Error string }{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &errorResponce); err != nil {
@@ -133,7 +131,7 @@ func stepEditFailedUser(assert *assert.Assertions, testUser dom.User) {
 func stepEditCorrectUser(assert *assert.Assertions, testUser dom.User) {
 	// Change e-mail
 	testUser.EMail = "new@email.baz"
-	rr := proccessAction("edit", testUser)
+	rr := proccessUserAction("edit", testUser)
 	// Read response a body
 	editedUser := dom.User{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &editedUser); err != nil {
@@ -157,7 +155,7 @@ func stepSetupPassword(assert *assert.Assertions, testUser dom.User) {
 func stepDeleteFailedUser(assert *assert.Assertions, testUser dom.User) {
 	wrongUser := testUser
 	wrongUser.Id = 999999
-	rr := proccessAction("delete", wrongUser)
+	rr := proccessUserAction("delete", wrongUser)
 	// Read response a body
 	errorResponce := struct{ Error string }{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &errorResponce); err != nil {
@@ -169,7 +167,7 @@ func stepDeleteFailedUser(assert *assert.Assertions, testUser dom.User) {
 }
 
 func stepDeleteCorrectUser(assert *assert.Assertions, testUser dom.User) {
-	rr := proccessAction("delete", testUser)
+	rr := proccessUserAction("delete", testUser)
 	// Read response a body
 	deletedUser := dom.User{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &deletedUser); err != nil {
@@ -183,7 +181,7 @@ func stepDeleteCorrectUser(assert *assert.Assertions, testUser dom.User) {
 }
 
 func stepBadAction(assert *assert.Assertions, testUser dom.User) {
-	rr := proccessAction("bad_action", testUser)
+	rr := proccessUserAction("bad_action", testUser)
 	// Read response a body
 	errorResponce := struct{ Error string }{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &errorResponce); err != nil {
@@ -194,40 +192,19 @@ func stepBadAction(assert *assert.Assertions, testUser dom.User) {
 	assert.NotEmpty(errorResponce.Error, "Error must not be empty")
 }
 
-func proccessAction(action string, user dom.User) *httptest.ResponseRecorder {
+func proccessUserAction(action string, user dom.User) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
-	ctx := prepareContext(w)
+	ctx := prepareGinContext(w)
 	setAction(ctx, action)
 	b, _ := json.Marshal(user)
-	ctx.Request = httptest.NewRequest("POST", "/accounts/"+action, bytes.NewReader(b))
+	ctx.Request = httptest.NewRequest("POST", "/users/"+action, bytes.NewReader(b))
 	PostAppUserAction()(ctx)
 	return w
 }
 
-func prepareContext(w http.ResponseWriter) *gin.Context {
-	ctx, _ := gin.CreateTestContext(w)
-	uid := api.UserIdentity{
-		Id:       123,
-		Username: TEST_APP_ADMIN_NAME,
-		IsAdmin:  true,
-	}
-	jwtClaims := api.UserIdentityToJWTClaims(uid)
-	ctx.Set("JWT_PAYLOAD", jwtClaims)
-	return ctx
-}
-
-func setAction(ctx *gin.Context, action string) {
-	ctx.Params = []gin.Param{
-		{
-			Key:   "action",
-			Value: action,
-		},
-	}
-}
-
 func setUserPassword(user dom.User, pass string) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
-	ctx := prepareContext(rr)
+	ctx := prepareGinContext(rr)
 	passwdData := fmt.Sprintf(`{"id": %d, "password": "%s"}`, user.Id, pass)
 	ctx.Request = httptest.NewRequest("POST", "/accounts/setPassword", strings.NewReader(passwdData))
 	setAction(ctx, "setPassword")

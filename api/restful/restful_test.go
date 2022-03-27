@@ -1,6 +1,7 @@
 package restful
 
 import (
+	"devZoneDeployment/api"
 	"devZoneDeployment/config"
 	"devZoneDeployment/db/mongodb"
 	"log"
@@ -62,4 +63,27 @@ func request(mockRouter *gin.Engine, req *http.Request) *httptest.ResponseRecord
 	rr := httptest.NewRecorder()
 	mockRouter.ServeHTTP(rr, req)
 	return rr
+}
+
+// setAction sets context params with specified action
+func setAction(ctx *gin.Context, action string) {
+	ctx.Params = []gin.Param{
+		{
+			Key:   "action",
+			Value: action,
+		},
+	}
+}
+
+// prepareGinContext creates a test gin context
+func prepareGinContext(w http.ResponseWriter) *gin.Context {
+	ctx, _ := gin.CreateTestContext(w)
+	uid := api.UserIdentity{
+		Id:       123,
+		Username: TEST_APP_ADMIN_NAME,
+		IsAdmin:  true,
+	}
+	jwtClaims := api.UserIdentityToJWTClaims(uid)
+	ctx.Set("JWT_PAYLOAD", jwtClaims)
+	return ctx
 }
