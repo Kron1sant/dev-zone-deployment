@@ -51,11 +51,11 @@ func TestGetAppUsers(t *testing.T) {
 	assert.Equal(http.StatusOK, rr.Code, "The response code must be 200")
 	// The list consists of admin + 2 new test users = 3
 	if assert.Len(list, 3, "Response must containe 3 users") {
-		assert.Equal(list[2].Username, testUser2.Username, "User name must be equal")
-		assert.Equal(list[2].EMail, testUser2.EMail, "User e-mail must be equal")
-		assert.Equal(list[2].IsAdmin, testUser2.IsAdmin, "User IsAdmin must be equal")
-		assert.Equal(list[2].HasDevAccount, testUser2.HasDevAccount, "User HasDevAccount must be equal")
-		assert.Equal(list[2].DevAccountId, testUser2.DevAccountId, "User DevAccountId must be equal")
+		assert.Equal(list[2].Username, testUser2.Username, "User name must be equal to the source")
+		assert.Equal(list[2].EMail, testUser2.EMail, "User e-mail must be equal to the source")
+		assert.Equal(list[2].IsAdmin, testUser2.IsAdmin, "User IsAdmin must be equal to the source")
+		assert.Equal(list[2].HasDevAccount, testUser2.HasDevAccount, "User HasDevAccount must be equal to the source")
+		assert.Equal(list[2].DevAccountId, testUser2.DevAccountId, "User DevAccountId must be equal to the source")
 	}
 }
 
@@ -82,14 +82,14 @@ func TestPostAppUserAction(t *testing.T) {
 
 func stepAddFailedUser(assert *assert.Assertions) {
 	wrongUser := dom.User{
-		Username: "worng name",
+		Username: "wrong name",
 		EMail:    "123@321",
 	}
 	rr := proccessUserAction("add", wrongUser)
 	// Read response a body
 	errorResponce := struct{ Error string }{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &errorResponce); err != nil {
-		assert.FailNow("The response body must contain the data of the created user", err)
+		assert.FailNow("The response body must contain the error data", err)
 	}
 	// Check the code and some fields of the data
 	assert.Equal(http.StatusBadRequest, rr.Code, "The response code must be 400")
@@ -105,11 +105,11 @@ func stepAddCorrectUser(assert *assert.Assertions) dom.User {
 	}
 	// Check the code and some fields of the data
 	assert.Equal(http.StatusCreated, rr.Code, "The response code must be 201")
-	assert.Equal(TEST_APP_USER.Username, createdUser.Username, "User name must be equal")
-	assert.Equal(TEST_APP_USER.EMail, createdUser.EMail, "User e-mail must be equal")
-	assert.Equal(TEST_APP_USER.IsAdmin, createdUser.IsAdmin, "User IsAdmin must be equal")
-	assert.Equal(createdUser.HasDevAccount, createdUser.HasDevAccount, "User HasDevAccount must be equal")
-	assert.Equal(createdUser.DevAccountId, createdUser.DevAccountId, "User DevAccountId must be equal")
+	assert.Equal(TEST_APP_USER.Username, createdUser.Username, "Created User's name must be equal to the source")
+	assert.Equal(TEST_APP_USER.EMail, createdUser.EMail, "Created User's e-mail must be equal to the source")
+	assert.Equal(TEST_APP_USER.IsAdmin, createdUser.IsAdmin, "Created User's IsAdmin must be equal to the source")
+	assert.Equal(TEST_APP_USER.HasDevAccount, createdUser.HasDevAccount, "Created User's HasDevAccount must be equal to the source")
+	assert.Equal(TEST_APP_USER.DevAccountId, createdUser.DevAccountId, "Created User's DevAccountId must be equal to the source")
 
 	return createdUser
 }
@@ -121,7 +121,7 @@ func stepEditFailedUser(assert *assert.Assertions, testUser dom.User) {
 	// Read response a body
 	errorResponce := struct{ Error string }{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &errorResponce); err != nil {
-		assert.FailNow("The response body must contain the data of the created user", err)
+		assert.FailNow("The response body must contain the error data", err)
 	}
 	// Check the code and some fields of the data
 	assert.Equal(http.StatusBadRequest, rr.Code, "The response code must be 400")
@@ -139,11 +139,11 @@ func stepEditCorrectUser(assert *assert.Assertions, testUser dom.User) {
 	}
 	// Check the code and some fields of the data
 	assert.Equal(http.StatusCreated, rr.Code, "The response code must be 201")
-	assert.Equal(testUser.Id, editedUser.Id, "User Id must be equal")
-	assert.Equal(testUser.Username, editedUser.Username, "User name must be equal")
-	assert.Equal(testUser.EMail, editedUser.EMail, "User e-mail must be equal")
-	assert.Equal(testUser.HasDevAccount, editedUser.HasDevAccount, "User HasDevAccount must be equal")
-	assert.Equal(testUser.DevAccountId, editedUser.DevAccountId, "User DevAccountId must be equal")
+	assert.Equal(testUser.Id, editedUser.Id, "Edited User's Id must be equal to the source")
+	assert.Equal(testUser.Username, editedUser.Username, "Edited User's name must be equal to the source")
+	assert.Equal(testUser.EMail, editedUser.EMail, "Edited User's e-mail must be equal to the source")
+	assert.Equal(testUser.HasDevAccount, editedUser.HasDevAccount, "Edited User's HasDevAccount must be equal to the source")
+	assert.Equal(testUser.DevAccountId, editedUser.DevAccountId, "Edited User's DevAccountId must be equal to the source")
 }
 
 func stepSetupPassword(assert *assert.Assertions, testUser dom.User) {
@@ -159,7 +159,7 @@ func stepDeleteFailedUser(assert *assert.Assertions, testUser dom.User) {
 	// Read response a body
 	errorResponce := struct{ Error string }{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &errorResponce); err != nil {
-		assert.FailNow("The response body must contain the data of the created user", err)
+		assert.FailNow("The response body must contain the error data", err)
 	}
 	// Check the code and some fields of the data
 	assert.Equal(http.StatusBadRequest, rr.Code, "The response code must be 400")
@@ -175,9 +175,9 @@ func stepDeleteCorrectUser(assert *assert.Assertions, testUser dom.User) {
 	}
 	// Check the code and some fields of the data
 	assert.Equal(http.StatusCreated, rr.Code, "The response code must be 201")
-	assert.Equal(testUser.Id, deletedUser.Id, "User Id must be equal")
-	assert.Equal(testUser.Username, deletedUser.Username, "User name must be equal")
-	assert.Equal(testUser.EMail, deletedUser.EMail, "User e-mail must be equal")
+	assert.Equal(testUser.Id, deletedUser.Id, "Deleted User's Id must be equal to the source")
+	assert.Equal(testUser.Username, deletedUser.Username, "Deleted User's name must be equal to the source")
+	assert.Equal(testUser.EMail, deletedUser.EMail, "Deleted User's e-mail must be equal to the source")
 }
 
 func stepBadAction(assert *assert.Assertions, testUser dom.User) {
@@ -185,7 +185,7 @@ func stepBadAction(assert *assert.Assertions, testUser dom.User) {
 	// Read response a body
 	errorResponce := struct{ Error string }{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &errorResponce); err != nil {
-		assert.FailNow("The response body must contain the data of the created user", err)
+		assert.FailNow("The response body must contain the error data", err)
 	}
 	// Check the code and some fields of the data
 	assert.Equal(http.StatusBadRequest, rr.Code, "The response code must be 400")
