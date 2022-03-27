@@ -24,10 +24,41 @@ var TEST_APP_USER = dom.User{
 }
 
 func TestGetAppUsers(t *testing.T) {
-	w := httptest.NewRecorder()
-	ctx := prepareContext(w)
+	assert := assert.New(t)
+
+	// Add two new test users
+	testUser1 := dom.User{
+		Username: "first_user",
+		EMail:    "foo@mail.foo",
+		IsAdmin:  true,
+	}
+	proccessAction("add", testUser1)
+	testUser2 := dom.User{
+		Username: "second_user",
+		EMail:    "baz@mail.baz",
+		IsAdmin:  true,
+	}
+	proccessAction("add", testUser2)
+
+	// Test getting app users
+	rr := httptest.NewRecorder()
+	ctx := prepareContext(rr)
 	GetAppUsers()(ctx)
-	fmt.Println(w.Body.String())
+	// Read response a body
+	list := []dom.User{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &list); err != nil {
+		assert.FailNow("The response body must contain the data of the created user", err)
+	}
+	// Check the code and some fields of the data
+	assert.Equal(http.StatusOK, rr.Code, "The response code must be 200")
+	// The list consists of admin + 2 new test users = 3
+	if assert.Len(list, 3, "Response must containe 3 users") {
+		assert.Equal(list[2].Username, testUser2.Username, "User name must be equal")
+		assert.Equal(list[2].EMail, testUser2.EMail, "User e-mail must be equal")
+		assert.Equal(list[2].IsAdmin, testUser2.IsAdmin, "User IsAdmin must be equal")
+		assert.Equal(list[2].HasDevAccount, testUser2.HasDevAccount, "User HasDevAccount must be equal")
+		assert.Equal(list[2].DevAccountId, testUser2.DevAccountId, "User DevAccountId must be equal")
+	}
 }
 
 func TestPostAppUserAction(t *testing.T) {
@@ -49,7 +80,6 @@ func TestPostAppUserAction(t *testing.T) {
 	stepDeleteCorrectUser(assert, testUser)
 	// Test executing a bad action
 	stepBadAction(assert, testUser)
-
 }
 
 func stepAddFailedUser(assert *assert.Assertions) {
@@ -79,6 +109,7 @@ func stepAddCorrectUser(assert *assert.Assertions) dom.User {
 	assert.Equal(http.StatusCreated, rr.Code, "The response code must be 201")
 	assert.Equal(TEST_APP_USER.Username, createdUser.Username, "User name must be equal")
 	assert.Equal(TEST_APP_USER.EMail, createdUser.EMail, "User e-mail must be equal")
+	assert.Equal(TEST_APP_USER.IsAdmin, createdUser.IsAdmin, "User IsAdmin must be equal")
 	assert.Equal(createdUser.HasDevAccount, createdUser.HasDevAccount, "User HasDevAccount must be equal")
 	assert.Equal(createdUser.DevAccountId, createdUser.DevAccountId, "User DevAccountId must be equal")
 
