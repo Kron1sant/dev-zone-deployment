@@ -4,6 +4,7 @@ import (
 	"devZoneDeployment/api"
 	"devZoneDeployment/config"
 	"devZoneDeployment/db/mongodb"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -40,11 +41,17 @@ func setup() {
 			"password":"` + TEST_APP_ADMIN_PASS + `"
 		}
 	}`
+	yacloudparams := fmt.Sprintf(`{
+		"folderId":"%s", 
+		"token":"%s"
+	}`, os.Getenv("DEVZONE_YA_FOLDER"), os.Getenv("DEVZONE_YA_TOKEN"))
+
 	config.SetDBParamsFromJSON(dbparams)
 	config.SetAppParamsFromJSON(appparams)
+	config.SetYaCloudParamsFromJSON(yacloudparams)
 
 	// During initialization, a new test base will be created
-	// and the specified user will be started
+	// and the specified user will be added
 	mongodb.UseMongoDBSource()
 }
 
