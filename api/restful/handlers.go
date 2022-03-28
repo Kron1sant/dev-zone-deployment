@@ -21,7 +21,7 @@ func AddHandlers(router gin.IRoutes) {
 	router.GET("/accounts", GetDevAccounts())
 	router.POST("/accounts/:action", PostDevAccountAction())
 	// Virtual machines handlers
-	router.GET("/vm", ListVM())
+	router.GET("/vm", GetVMs())
 	router.POST("/vm/:action", PostVMAction())
 	// OpenVPN handlers
 	router.POST("/openvpnkey", PostOpenVPNKey())

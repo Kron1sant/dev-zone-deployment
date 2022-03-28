@@ -33,7 +33,7 @@ func (ds *MongoDBSource) SetAppUser(uid api.UserIdentity, appUser *dom.User, isN
 			log.Printf("Cannot insert %v, cause: %s\n", appUser, err)
 			return err
 		}
-		log.Println("RESULT INSERTING:", *res)
+		log.Println("APP USER INSERT (document_id):", res.InsertedID)
 	} else {
 		filter := new(mongoFilter)
 		filter.AddEq("_id", appUser.Id)
@@ -44,6 +44,7 @@ func (ds *MongoDBSource) SetAppUser(uid api.UserIdentity, appUser *dom.User, isN
 		} else if res.ModifiedCount == 0 {
 			return fmt.Errorf("the account has not been modified, because 0 accs have such id: %d", appUser.Id)
 		}
+		log.Println("APP USER UPDATE (modified count):", res.ModifiedCount)
 	}
 
 	return nil

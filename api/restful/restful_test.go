@@ -46,6 +46,9 @@ func setup() {
 		"token":"%s"
 	}`, os.Getenv("DEVZONE_YA_FOLDER"), os.Getenv("DEVZONE_YA_TOKEN"))
 
+	if _, err := os.Stat("../../config.yaml"); err == nil {
+		config.InitWithFile("../../config.yaml")
+	}
 	config.SetDBParamsFromJSON(dbparams)
 	config.SetAppParamsFromJSON(appparams)
 	config.SetYaCloudParamsFromJSON(yacloudparams)
@@ -84,6 +87,7 @@ func setAction(ctx *gin.Context, action string) {
 
 // prepareGinContext creates a test gin context
 func prepareGinContext(w http.ResponseWriter) *gin.Context {
+	gin.SetMode(gin.TestMode)
 	ctx, _ := gin.CreateTestContext(w)
 	uid := api.UserIdentity{
 		Id:       123,

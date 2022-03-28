@@ -48,4 +48,5 @@ const (
 	VM_STATUS_CRASHED      StatusVM = "CRASHED"
 	VM_STATUS_ERROR        StatusVM = "ERROR"
 	VM_STATUS_DELETING     StatusVM = "DELETING"
+	VM_STATUS_NOTEXIST     StatusVM = "NOT_EXIST"
 )
