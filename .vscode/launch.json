@@ -18,6 +18,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "main.go",
+            "args": ["-config", "config.yaml"]
         }
 
     ]

@@ -1,17 +1,16 @@
 package mongodb
 
 import (
+	"devZoneDeployment/api"
 	"devZoneDeployment/config"
 	"devZoneDeployment/db"
 	"devZoneDeployment/db/dom"
 	"devZoneDeployment/db/utils"
 	"fmt"
 	"log"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
-func (ds *MongoDBSource) GetAppUsers(uid dom.UserIdentity, f db.Filter) []*dom.User {
+func (ds *MongoDBSource) GetAppUsers(uid api.UserIdentity, f db.Filter) []*dom.User {
 	// Add a filter which control access
 	// Non admin user can see only own record
 	if !uid.IsAdmin {
@@ -21,7 +20,7 @@ func (ds *MongoDBSource) GetAppUsers(uid dom.UserIdentity, f db.Filter) []*dom.U
 	return ds.getAppUsersFiltered(f)
 }
 
-func (ds *MongoDBSource) SetAppUser(uid dom.UserIdentity, appUser *dom.User, isNew bool) error {
+func (ds *MongoDBSource) SetAppUser(uid api.UserIdentity, appUser *dom.User, isNew bool) error {
 	if err := ds.isAppUserEditingAvailable(uid, appUser, isNew); err != nil {
 		return err
 	}
@@ -29,7 +28,7 @@ func (ds *MongoDBSource) SetAppUser(uid dom.UserIdentity, appUser *dom.User, isN
 	appUsers := ds.Database.Collection("app_users")
 	if isNew {
 		appUser.Id = ds.getNewId("app_users")
-		res, err := appUsers.InsertOne(defaulContext(), appUser)
+		res, err := appUsers.InsertOne(DefaulContext(), appUser)
 		if err != nil {
 			log.Printf("Cannot insert %v, cause: %s\n", appUser, err)
 			return err
@@ -38,17 +37,19 @@ func (ds *MongoDBSource) SetAppUser(uid dom.UserIdentity, appUser *dom.User, isN
 	} else {
 		filter := new(mongoFilter)
 		filter.AddEq("_id", appUser.Id)
-		_, err := appUsers.ReplaceOne(defaulContext(), filter.Compose(), appUser)
+		res, err := appUsers.ReplaceOne(DefaulContext(), filter.Compose(), appUser)
 		if err != nil {
 			log.Printf("Cannot update %v, cause: %s\n", appUser, err)
 			return err
+		} else if res.ModifiedCount == 0 {
+			return fmt.Errorf("the account has not been modified, because 0 accs have such id: %d", appUser.Id)
 		}
 	}
 
 	return nil
 }
 
-func (ds *MongoDBSource) RemoveAppUser(uid dom.UserIdentity, appUser *dom.User) error {
+func (ds *MongoDBSource) RemoveAppUser(uid api.UserIdentity, appUser *dom.User) error {
 	if !uid.IsAdmin && uid.Id != appUser.Id {
 		return fmt.Errorf("only admin can delete another user")
 	}
@@ -56,16 +57,18 @@ func (ds *MongoDBSource) RemoveAppUser(uid dom.UserIdentity, appUser *dom.User) 
 	appUsers := ds.Database.Collection("app_users")
 	filter := new(mongoFilter)
 	filter.AddEq("_id", appUser.Id)
-	_, err := appUsers.DeleteOne(defaulContext(), filter.Compose())
+	res, err := appUsers.DeleteOne(DefaulContext(), filter.Compose())
 	if err != nil {
 		log.Printf("Cannot remove %v, cause: %s\n", appUser, err)
 		return err
+	} else if res.DeletedCount == 0 {
+		return fmt.Errorf("the user has not been deleted, because 0 users have such id: %d", appUser.Id)
 	}
 
 	return nil
 }
 
-func (ds *MongoDBSource) SetAppUserPassword(uid dom.UserIdentity, userId uint, password string) error {
+func (ds *MongoDBSource) SetAppUserPassword(uid api.UserIdentity, userId uint, password string) error {
 	if !uid.IsAdmin && uid.Id != userId {
 		return fmt.Errorf("only admin can change another user passwords")
 	}
@@ -79,7 +82,7 @@ func (ds *MongoDBSource) SetAppUserPassword(uid dom.UserIdentity, userId uint, p
 	return ds.SetAppUser(uid, user, false)
 }
 
-func (ds *MongoDBSource) GetAppUserById(uid dom.UserIdentity, userId uint) *dom.User {
+func (ds *MongoDBSource) GetAppUserById(uid api.UserIdentity, userId uint) *dom.User {
 	filter := ds.GetFilter("_id", userId)
 	users := ds.getAppUsersFiltered(filter)
 	if len(users) == 1 {
@@ -90,20 +93,19 @@ func (ds *MongoDBSource) GetAppUserById(uid dom.UserIdentity, userId uint) *dom.
 	}
 }
 
-func (ds *MongoDBSource) GetAppUserByName(uid dom.UserIdentity, username string) *dom.User {
+func (ds *MongoDBSource) GetAppUserByName(uid api.UserIdentity, username string) *dom.User {
 	filter := ds.GetFilter("username", username)
 	users := ds.getAppUsersFiltered(filter)
 	if len(users) == 1 {
 		return users[0]
 	} else {
-		log.Printf("User didn't find by name %s", username)
 		return nil
 	}
 }
 
 func (ds *MongoDBSource) getAppUsersFiltered(f db.Filter) []*dom.User {
 	appUsers := ds.Database.Collection("app_users")
-	findCursor, err := appUsers.Find(defaulContext(), f.Compose())
+	findCursor, err := appUsers.Find(DefaulContext(), f.Compose())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -113,7 +115,7 @@ func (ds *MongoDBSource) getAppUsersFiltered(f db.Filter) []*dom.User {
 		capacity = 1
 	}
 	res := make([]*dom.User, 0, capacity)
-	for findCursor.Next(defaulContext()) {
+	for findCursor.Next(DefaulContext()) {
 		appUser := &dom.User{}
 		if err := findCursor.Decode(appUser); err != nil {
 			log.Fatal(err)
@@ -127,35 +129,26 @@ func (ds *MongoDBSource) getAppUsersFiltered(f db.Filter) []*dom.User {
 func (ds *MongoDBSource) checkAdmin() {
 	// Get default admin from config
 	// Default admin is needed to provide app authentication (e.g. RESTful api)
-	var defaultAdmin dom.User
-	confKey := "service.default_admin"
-	if supConf := config.AppConfig.Sub(confKey); supConf == nil {
-		log.Panicf("%q is absent in config. see config.example.yaml", confKey)
-	} else {
-		supConf.Unmarshal(&defaultAdmin)
+	adminFromConfig := config.GetDefaultAdmin()
+	defaultAdmin := dom.User{
+		Username: adminFromConfig.Username,
+		EMail:    adminFromConfig.Email,
+		Password: utils.HashAndSaltPassword(adminFromConfig.Password),
+		IsAdmin:  true,
 	}
-	// replace pass to its hash
-	defaultAdmin.Password = utils.HashAndSaltPassword(config.SecConfig.GetAdminPassword())
-	// new user is only admin
-	defaultAdmin.IsAdmin = true
 
 	// Check admin presence, otherwise add one
-	appUser := ds.Database.Collection("app_users")
-	findCursor, err := appUser.Find(defaulContext(), bson.M{"username": defaultAdmin.Username})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if !findCursor.TryNext(defaulContext()) {
-		_, err := appUser.InsertOne(defaulContext(), defaultAdmin)
-		if err != nil {
+	uid := api.IdentityFromUser(&defaultAdmin)
+	if ds.GetAppUserByName(uid, defaultAdmin.Username) == nil {
+		if err := ds.SetAppUser(uid, &defaultAdmin, true); err != nil {
 			log.Fatalf("cannot create app admin in MongoDB: %s", err)
+		} else {
+			log.Printf("Add new app admin %q\n", defaultAdmin.Username)
 		}
-		log.Printf("Add new app admin %q\n", defaultAdmin.Username)
 	}
 }
 
-func (ds *MongoDBSource) isAppUserEditingAvailable(uid dom.UserIdentity, appUser *dom.User, isNew bool) error {
+func (ds *MongoDBSource) isAppUserEditingAvailable(uid api.UserIdentity, appUser *dom.User, isNew bool) error {
 	isAdminSession := uid.IsAdmin
 	userIdOfSession := uid.Id
 	var existingUser *dom.User = nil

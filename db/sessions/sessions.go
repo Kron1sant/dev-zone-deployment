@@ -15,7 +15,7 @@ import (
 type contextSession struct {
 	ctx *gin.Context
 	ds  db.DataActions
-	ui  dom.UserIdentity
+	ui  api.UserIdentity
 }
 
 func New(ctx *gin.Context) *contextSession {

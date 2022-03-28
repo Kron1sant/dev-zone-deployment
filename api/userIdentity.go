@@ -9,8 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func IdentityFromUser(user *dom.User) dom.UserIdentity {
-	identity := dom.UserIdentity{
+// Represent an identity of an app user session
+// Using to authorize actions in a session
+type UserIdentity struct {
+	Id       uint
+	Username string
+	IsAdmin  bool
+	Empty    bool
+	Guest    bool
+}
+
+// Getting UserIdentity by User
+func IdentityFromUser(user *dom.User) UserIdentity {
+	identity := UserIdentity{
 		Id:       user.Id,
 		Username: user.Username,
 		IsAdmin:  user.IsAdmin,
@@ -19,16 +30,18 @@ func IdentityFromUser(user *dom.User) dom.UserIdentity {
 	return identity
 }
 
-func IdentityFromContext(ctx *gin.Context) dom.UserIdentity {
+// Getting UserIdentity from GIN context with JWT
+func IdentityFromContext(ctx *gin.Context) UserIdentity {
 	return IdentityFromJWTClaims(jwt.ExtractClaims(ctx))
 }
 
-func IdentityFromJWTClaims(claims jwt.MapClaims) dom.UserIdentity {
+// Getting UserIdentity from JWT claims
+func IdentityFromJWTClaims(claims jwt.MapClaims) UserIdentity {
 	// check id existence
 	idInClaims, ok := claims["id"]
 	if !ok {
 		// Bad jwt claims format!
-		return dom.UserIdentity{
+		return UserIdentity{
 			Empty: true,
 		}
 	}
@@ -37,19 +50,19 @@ func IdentityFromJWTClaims(claims jwt.MapClaims) dom.UserIdentity {
 	userid, err := strconv.ParseUint(idInClaims.(string), 10, 64)
 	if err != nil {
 		// Bad jwt claims format!
-		return dom.UserIdentity{Empty: true}
+		return UserIdentity{Empty: true}
 	}
 
 	// get isAdmin flag
 	isAdminInClaims, ok := claims["isAdmin"]
 	if !ok {
 		// Bad jwt claims format!
-		return dom.UserIdentity{Empty: true}
+		return UserIdentity{Empty: true}
 	}
 	isAdmin := isAdminInClaims.(bool)
 
 	// compose identity
-	identity := dom.UserIdentity{
+	identity := UserIdentity{
 		Id:       uint(userid),
 		Username: claims["username"].(string),
 		IsAdmin:  isAdmin,
@@ -58,7 +71,8 @@ func IdentityFromJWTClaims(claims jwt.MapClaims) dom.UserIdentity {
 	return identity
 }
 
-func UserIdentityToJWTClaims(identity dom.UserIdentity) jwt.MapClaims {
+// Preparing JWT claims with UserIdentity
+func UserIdentityToJWTClaims(identity UserIdentity) jwt.MapClaims {
 	return jwt.MapClaims{
 		"id":       fmt.Sprintf("%d", identity.Id),
 		"username": identity.Username,

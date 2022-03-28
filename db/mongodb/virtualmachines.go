@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"devZoneDeployment/api"
 	"devZoneDeployment/db"
 	"devZoneDeployment/db/dom"
 	"devZoneDeployment/yacloudclient"
@@ -8,12 +9,12 @@ import (
 	"log"
 )
 
-func (ds *MongoDBSource) ListVirtualMachines(uid dom.UserIdentity) []*dom.VM {
+func (ds *MongoDBSource) ListVirtualMachines(uid api.UserIdentity) []*dom.VM {
 
 	return ds.getVirtualMachines(uid, ds.GetEmptyFilter())
 }
 
-func (ds *MongoDBSource) UpdateListVirtualMachinesFromCloud(uid dom.UserIdentity) error {
+func (ds *MongoDBSource) UpdateListVirtualMachinesFromCloud(uid api.UserIdentity) error {
 	vms := yacloudclient.ListInstances()
 	for _, v := range vms {
 		foundVm := ds.getVirtualMachines(uid, ds.GetFilter("_id", v.Id))
@@ -30,16 +31,16 @@ func (ds *MongoDBSource) UpdateListVirtualMachinesFromCloud(uid dom.UserIdentity
 		vm.Name = v.Name
 		vm.Description = v.Description
 		vm.Params = "params_foobaz"
-		vm.Status = yacloudclient.InstanseStatus(v.Status)
+		vm.Status = dom.StatusVM(yacloudclient.InstanseStatus(v.Status))
 		ds.SetVirtualMachine(uid, vm, isNew)
 	}
 
 	return nil
 }
 
-func (ds *MongoDBSource) getVirtualMachines(uid dom.UserIdentity, f db.Filter) []*dom.VM {
+func (ds *MongoDBSource) getVirtualMachines(uid api.UserIdentity, f db.Filter) []*dom.VM {
 	virtMachines := ds.Database.Collection("virtual_machines")
-	findCursor, err := virtMachines.Find(defaulContext(), f.Compose())
+	findCursor, err := virtMachines.Find(DefaulContext(), f.Compose())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,7 +50,7 @@ func (ds *MongoDBSource) getVirtualMachines(uid dom.UserIdentity, f db.Filter) [
 		capacity = 10
 	}
 	res := make([]*dom.VM, 0, capacity)
-	for findCursor.Next(defaulContext()) {
+	for findCursor.Next(DefaulContext()) {
 		vm := &dom.VM{}
 		if err := findCursor.Decode(vm); err != nil {
 			log.Fatal(err)
@@ -60,14 +61,14 @@ func (ds *MongoDBSource) getVirtualMachines(uid dom.UserIdentity, f db.Filter) [
 	return res
 }
 
-func (ds *MongoDBSource) SetVirtualMachine(uid dom.UserIdentity, vm *dom.VM, isNew bool) error {
+func (ds *MongoDBSource) SetVirtualMachine(uid api.UserIdentity, vm *dom.VM, isNew bool) error {
 	if !uid.IsAdmin {
 		return fmt.Errorf("only admin can change virtual machine")
 	}
 
 	virtMachines := ds.Database.Collection("virtual_machines")
 	if isNew {
-		res, err := virtMachines.InsertOne(defaulContext(), vm)
+		res, err := virtMachines.InsertOne(DefaulContext(), vm)
 		if err != nil {
 			log.Printf("Cannot insert %v, cause: %s\n", vm, err)
 			return err
@@ -75,7 +76,7 @@ func (ds *MongoDBSource) SetVirtualMachine(uid dom.UserIdentity, vm *dom.VM, isN
 		log.Println("RESULT INSERTING:", *res)
 	} else {
 		filter := ds.GetFilter("_id", vm.Id)
-		_, err := virtMachines.ReplaceOne(defaulContext(), filter.Compose(), vm)
+		_, err := virtMachines.ReplaceOne(DefaulContext(), filter.Compose(), vm)
 		if err != nil {
 			log.Printf("Cannot update %v, cause: %s\n", vm, err)
 			return err

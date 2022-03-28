@@ -13,7 +13,7 @@ var sdk = newSdk()
 
 func newSdk() *ycsdk.SDK {
 	ctx := context.Background()
-	token := config.SecConfig.GetYaCloudToken()
+	token := config.GetYaToken()
 	if token == "" {
 		log.Println("yandex token is not specified")
 	}
@@ -28,7 +28,7 @@ func newSdk() *ycsdk.SDK {
 }
 
 func ListInstances() []*compute.Instance {
-	folderID := config.AppConfig.GetString("yacloud.folderid")
+	folderID := config.GetYaFolderID()
 	if folderID == "" {
 		log.Fatal("yandex cloud folder is not specified")
 	}

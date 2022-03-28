@@ -22,7 +22,7 @@ func GetOpenVPNKey(keyName string) ([]byte, error) {
 }
 
 func vpnKeyExists(keyName string) bool {
-	path2index := path.Join(config.AppConfig.GetString("openvpn.easyrsa"), "pki", "index.txt")
+	path2index := path.Join(config.GetEasyRsaDir(), "pki", "index.txt")
 
 	f, err := os.Open(path2index)
 	if err != nil {
@@ -42,9 +42,10 @@ func vpnKeyExists(keyName string) bool {
 }
 
 func generateNewOpenVPNKey(keyName string) ([]byte, error) {
-	easyrsa := path.Join(config.AppConfig.GetString("openvpn.easyrsa"), "easyrsa")
+	erDir := config.GetEasyRsaDir()
+	easyrsa := path.Join(erDir, "easyrsa")
 	cmd := exec.Command(easyrsa, "build-client-full", keyName, "nopass")
-	cmd.Dir = config.AppConfig.GetString("openvpn.easyrsa")
+	cmd.Dir = erDir
 
 	if err := cmd.Run(); err != nil {
 		log.Printf("cannot generate key: %s", cmd.String())
@@ -56,7 +57,7 @@ func generateNewOpenVPNKey(keyName string) ([]byte, error) {
 }
 
 func composeOpenVPNFile(keyName string) ([]byte, error) {
-	templatePath := config.AppConfig.GetString("openvpn.client-template")
+	templatePath := config.GetClientTemplatePath()
 	template, err := ioutil.ReadFile(templatePath)
 	if err != nil {
 		log.Printf("cannot compose openvpn file: %s: %s", templatePath, err.Error())
@@ -67,7 +68,7 @@ func composeOpenVPNFile(keyName string) ([]byte, error) {
 	res := bytes.NewBuffer(template)
 
 	fmt.Fprintln(res, "<ca>")
-	caPath := config.AppConfig.GetString("openvpn.ca-cert")
+	caPath := config.GetCaCertPath()
 	ca, err := ioutil.ReadFile(caPath)
 	if err != nil {
 		log.Printf("cannot compose openvpn file (ca certificate): %s: %s", caPath, err.Error())
@@ -76,10 +77,10 @@ func composeOpenVPNFile(keyName string) ([]byte, error) {
 	res.Write(ca)
 	fmt.Fprintln(res, "</ca>")
 
-	easyrsaPath := config.AppConfig.GetString("openvpn.easyrsa")
+	erDir := config.GetEasyRsaDir()
 
 	fmt.Fprintln(res, "<cert>")
-	userCertPath := path.Join(easyrsaPath, "pki", "issued", keyName+".crt")
+	userCertPath := path.Join(erDir, "pki", "issued", keyName+".crt")
 	data, err := readPayloadFromFile(userCertPath, "BEGIN CERTIFICATE")
 	if err != nil {
 		return nil, err
@@ -88,7 +89,7 @@ func composeOpenVPNFile(keyName string) ([]byte, error) {
 	fmt.Fprintln(res, "</cert>")
 
 	fmt.Fprintln(res, "<key>")
-	userKeyPath := path.Join(easyrsaPath, "pki", "private", keyName+".key")
+	userKeyPath := path.Join(erDir, "pki", "private", keyName+".key")
 	key, err := ioutil.ReadFile(userKeyPath)
 	if err != nil {
 		log.Printf("cannot compose openvpn file (user certificate): %s: %s", userKeyPath, err.Error())
@@ -98,7 +99,7 @@ func composeOpenVPNFile(keyName string) ([]byte, error) {
 	fmt.Fprintln(res, "</key>")
 
 	fmt.Fprintln(res, "<tls-crypt>")
-	tlsKey := config.AppConfig.GetString("openvpn.tls-key")
+	tlsKey := config.GetTlsKeyPath()
 	data, err = readPayloadFromFile(tlsKey, "BEGIN OpenVPN Static key")
 	if err != nil {
 		return nil, err
