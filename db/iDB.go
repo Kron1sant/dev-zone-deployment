@@ -20,9 +20,11 @@ type DataActions interface {
 	SetDevAccounts(uid api.UserIdentity, acc *dom.DevAccount, isNew bool) error
 	RemoveDevAccounts(uid api.UserIdentity, acc *dom.DevAccount) error
 
-	// Devzone actions
+	// Devzone section
 	GetNewOrExistsOpenVPNKey(uid api.UserIdentity, acc *dom.DevAccount) ([]byte, error)
 	ListVirtualMachines(uid api.UserIdentity) []*dom.VM
+	SetVirtualMachine(uid api.UserIdentity, vm *dom.VM, isNew bool) error
+	RemoveVirtualMachine(uid api.UserIdentity, vm *dom.VM) error
 	UpdateListVirtualMachinesFromCloud(uid api.UserIdentity) error
 
 	// Auxiliary methods

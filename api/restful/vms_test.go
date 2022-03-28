@@ -19,8 +19,46 @@ var TEST_VIRTUAL_MACHINE = dom.VM{
 	Status:        dom.VM_STATUS_RUNNING,
 }
 
-func TestListVM(t *testing.T) {
+func TestGetVMs(t *testing.T) {
+	assert := assert.New(t)
 
+	// Add two new test accounts
+	testVM1 := dom.VM{
+		Id:            "fha777d6a87sg6as9",
+		Name:          "TestVM_Foo",
+		HasDevAccount: false,
+		Description:   "Test vm Foo",
+		Status:        dom.VM_STATUS_RUNNING,
+	}
+	proccessVMAction("add", testVM1)
+	testVM2 := dom.VM{
+		Id:            "f9hb7dfan26asib6",
+		Name:          "TestVM_Baz",
+		HasDevAccount: false,
+		Description:   "Test vm Baz",
+		Status:        dom.VM_STATUS_NOTEXIST,
+	}
+	proccessVMAction("add", testVM2)
+
+	// Test getting dev accounts
+	rr := httptest.NewRecorder()
+	ctx := prepareGinContext(rr)
+	GetVMs()(ctx)
+	// Read response a body
+	list := []dom.VM{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &list); err != nil {
+		assert.FailNow("The response body must contain the data of the virtual machines", err)
+	}
+	// Check the code and some fields of the data
+	assert.Equal(http.StatusOK, rr.Code, "The response code must be 200")
+	// The list consists of 2 new vms
+	if assert.Len(list, 2, "Response must contain 2 developer accounts") {
+		assert.Equal(list[1].Id, testVM2.Id, "Received VM's Id must be equal to the source")
+		assert.Equal(list[1].Name, testVM2.Name, "Received VM's Name must be equal to the source")
+		assert.Equal(list[1].Description, testVM2.Description, "Received VM's Description must be equal to the source")
+		assert.Equal(list[1].HasDevAccount, testVM2.HasDevAccount, "Received VM's HasDevAccount must be equal to the source")
+		assert.Equal(list[1].Status, testVM2.Status, "Received VM's Status must be equal to the source")
+	}
 }
 
 func TestPostVMAction(t *testing.T) {

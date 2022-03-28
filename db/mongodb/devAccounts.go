@@ -12,8 +12,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const DEV_ACC_COLLECTION_NAME = "dev_accounts"
+
 func (ds *MongoDBSource) GetDevAccounts(uid api.UserIdentity, f db.Filter) []*dom.DevAccount {
-	devAccs := ds.Database.Collection("dev_accounts")
+	devAccs := ds.Database.Collection(DEV_ACC_COLLECTION_NAME)
 	findCursor, err := devAccs.Find(DefaulContext(), f.Compose())
 	if err != nil {
 		log.Fatal(err)
@@ -40,15 +42,15 @@ func (ds *MongoDBSource) SetDevAccounts(uid api.UserIdentity, devAccount *dom.De
 		return fmt.Errorf("only admin can change developer accounts")
 	}
 
-	devAccs := ds.Database.Collection("dev_accounts")
+	devAccs := ds.Database.Collection(DEV_ACC_COLLECTION_NAME)
 	if isNew {
-		devAccount.Id = ds.getNewId("dev_accounts")
+		devAccount.Id = ds.getNewId(DEV_ACC_COLLECTION_NAME)
 		res, err := devAccs.InsertOne(DefaulContext(), devAccount)
 		if err != nil {
 			log.Printf("Cannot insert %v, cause: %s\n", devAccount, err)
 			return err
 		}
-		log.Println("RESULT INSERTING:", *res)
+		log.Println("DEV ACCOUNT INSERT (document_id):", res.InsertedID)
 	} else {
 		filter := new(mongoFilter)
 		filter.AddEq("_id", devAccount.Id)
@@ -59,6 +61,7 @@ func (ds *MongoDBSource) SetDevAccounts(uid api.UserIdentity, devAccount *dom.De
 		} else if res.ModifiedCount == 0 {
 			return fmt.Errorf("the account has not been modified, because 0 accs have such id: %d", devAccount.Id)
 		}
+		log.Println("DEV ACCOUNT UPDATE (modified count):", res.ModifiedCount)
 	}
 
 	return nil
@@ -76,7 +79,7 @@ func (ds *MongoDBSource) RemoveDevAccounts(uid api.UserIdentity, devAccount *dom
 		return fmt.Errorf("deleted dev account is bound with app user (name): %s", aus[0].Username)
 	}
 
-	devAccs := ds.Database.Collection("dev_accounts")
+	devAccs := ds.Database.Collection(DEV_ACC_COLLECTION_NAME)
 	filter := new(mongoFilter)
 	filter.AddEq("_id", devAccount.Id)
 	res, err := devAccs.DeleteOne(DefaulContext(), filter.Compose())

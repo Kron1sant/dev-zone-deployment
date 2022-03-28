@@ -127,6 +127,18 @@ func (sctx *contextSession) ListVirtualMachines() []*dom.VM {
 	return sctx.ds.ListVirtualMachines(sctx.ui)
 }
 
+func (sctx *contextSession) AddVirtualMachine(vm *dom.VM) error {
+	return sctx.ds.SetVirtualMachine(sctx.ui, vm, true)
+}
+
+func (sctx *contextSession) EditVirtualMachine(vm *dom.VM) error {
+	return sctx.ds.SetVirtualMachine(sctx.ui, vm, false)
+}
+
+func (sctx *contextSession) DeleteVirtualMachine(vm *dom.VM) error {
+	return sctx.ds.RemoveVirtualMachine(sctx.ui, vm)
+}
+
 func (sctx *contextSession) UpdateListVirtualMachinesFromCloud() error {
 	return sctx.ds.UpdateListVirtualMachinesFromCloud(sctx.ui)
 }
